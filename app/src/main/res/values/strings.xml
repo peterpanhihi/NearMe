@@ -1,0 +1,72 @@
+<resources>
+    <string name="app_name">NearMe</string>
+    <string name="facebook_app_id">1621156648206934</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string-array name="types_array">
+        <item>ATM</item>
+        <item>Bakery</item>
+        <item>Bank</item>
+        <item>Beauty and salon</item>
+        <item>Bus station</item>
+        <item>Cafe</item>
+        <item>Convenience store</item>
+        <item>Department store</item>
+        <item>Hospital</item>
+        <item>Gas station</item>
+        <item>Supermarket</item>
+        <item>Pharmacy</item>
+        <item>Police</item>
+        <item>Restaurant</item>
+        <item>Select Place</item>
+    </string-array>
+
+    <integer-array name="icon_types_array">
+        <item>@drawable/atm</item>
+        <item>@drawable/cupcake</item>
+        <item>@drawable/bank_building</item>
+        <item>@drawable/hairdryer</item>
+        <item>@drawable/bus</item>
+        <item>@drawable/coffee</item>
+        <item>@drawable/shop_store</item>
+        <item>@drawable/department_store</item>
+        <item>@drawable/hospital</item>
+        <item>@drawable/fuel_station_pump</item>
+        <item>@drawable/shopping_cart</item>
+        <item>@drawable/tablet_and_pill</item>
+        <item>@drawable/police</item>
+        <item>@drawable/restaurant</item>
+        <item>@drawable/location</item>
+    </integer-array>
+
+    <string-array name="color_type_array">
+        <item name="colorAtm">#F44336</item>
+        <item name="colorBakery">#E91E63</item>
+        <item name="colorBank">#9C27B0</item>
+        <item name="colorBeauty">#673AB7</item>
+        <item name="colorBus">#3F51B5</item>
+        <item name="colorCafe">#03A9F4</item>
+        <item name="colorConvenience">#00BCD4</item>
+        <item name="colorDepartment">#009688</item>
+        <item name="colorHospital">#4CAF50</item>
+        <item name="colorGas">#8BC34A</item>
+        <item name="colorSupermarket">#CDDC39</item>
+        <item name="colorPharmacy">#FFC107</item>
+        <item name="colorPolice">#FF9800</item>
+        <item name="colorRestaurant">#FF5722</item>
+        <item name="colorPlace">#607D8B</item>
+    </string-array>
+
+    <string name="map_not_ready">Map is not ready yet</string>
+
+    <!--    Permissions    -->
+    <string name="permission_rationale_location">Access to the location service is required to demonstrate the \'my location\' feature, which shows your current location on the map.</string>
+    <string name="location_permission_denied">This sample requires location permission to enable the \'my location\' layer. Please try again and grant access to use the location.\nIf the permission has been permanently denied, it can be enabled from the System Settings &gt; Apps &gt; \'Google Maps API Demos\'.</string>
+    <string name="permission_required_toast">Location permission is required for this demo.</string>
+</resources>
+
+

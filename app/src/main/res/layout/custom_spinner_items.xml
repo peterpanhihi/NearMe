@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/icon_type_img"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:paddingLeft="16dp"
+        android:padding="5dp"
+        android:src="@drawable/ic_menu_gallery" /><!--Make sure image is present in Drawable folder-->
+
+    <TextView
+        android:id="@+id/types_text"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:textSize="16dp"
+        android:textColor="@color/font_color_gray"/>
+</LinearLayout>
