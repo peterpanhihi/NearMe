@@ -1,4 +1,4 @@
-package com.example.peterpan.nearme.CustomSpinner;
+package com.example.peterpan.nearme.custom_spinner;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -13,13 +13,13 @@ import com.example.peterpan.nearme.R;
 /**
  * Created by Peterpan on 5/11/2016 AD.
  */
-public class CustomAdapter extends BaseAdapter {
+public class CustomSpinnerAdapter extends BaseAdapter {
     Context context;
     String types[];
     int icons[];
     LayoutInflater inflter;
 
-    public CustomAdapter(Context context, String[] types, int[] icons) {
+    public CustomSpinnerAdapter(Context context, String[] types, int[] icons) {
         this.context = context;
         this.types = types;
         this.icons = icons;

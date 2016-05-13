@@ -1,4 +1,4 @@
-package com.example.peterpan.nearme;
+package com.example.peterpan.nearme.model;
 
 /**
  * Created by Peterpan on 5/13/2016 AD.
@@ -8,8 +8,10 @@ public class Bookmarks {
     private double latitude;
     private double longitude;
     private String phone_number;
+    private String address;
     private String type;
     private String user_id;
+    private String place_id;
 
     public Bookmarks() {}
 
@@ -45,6 +47,14 @@ public class Bookmarks {
         this.phone_number = phone_number;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
     public String getType() {
         return type;
     }
@@ -59,6 +69,14 @@ public class Bookmarks {
 
     public void setUser_id(String user_id) {
         this.user_id = user_id;
+    }
+
+    public String getPlace_id() {
+        return place_id;
+    }
+
+    public void setPlace_id(String place_id) {
+        this.place_id = place_id;
     }
 
     @Override

@@ -3,7 +3,6 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:checked="true"
             android:id="@+id/nav_home"
             android:icon="@drawable/home_map_marker"
             android:title="Home"

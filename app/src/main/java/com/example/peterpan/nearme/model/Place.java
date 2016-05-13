@@ -1,4 +1,4 @@
-package com.example.peterpan.nearme;
+package com.example.peterpan.nearme.model;
 
 import com.akexorcist.googledirection.model.Route;
 import com.google.android.gms.maps.model.LatLng;

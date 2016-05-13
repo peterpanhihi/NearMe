@@ -1,4 +1,4 @@
-package com.example.peterpan.nearme;
+package com.example.peterpan.nearme.model;
 
 import java.io.Serializable;
 

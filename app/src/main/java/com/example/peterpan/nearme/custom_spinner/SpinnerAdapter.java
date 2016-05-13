@@ -1,4 +1,4 @@
-package com.example.peterpan.nearme.CustomSpinner;
+package com.example.peterpan.nearme.custom_spinner;
 
 import android.content.Context;
 import android.view.View;

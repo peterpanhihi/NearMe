@@ -42,7 +42,11 @@ import com.akexorcist.googledirection.model.Leg;
 import com.akexorcist.googledirection.model.Route;
 import com.akexorcist.googledirection.util.DirectionConverter;
 import com.bumptech.glide.Glide;
-import com.example.peterpan.nearme.CustomSpinner.CustomAdapter;
+import com.example.peterpan.nearme.custom_spinner.CustomSpinnerAdapter;
+import com.example.peterpan.nearme.model.Bookmarks;
+import com.example.peterpan.nearme.model.ListTypes;
+import com.example.peterpan.nearme.model.Place;
+import com.example.peterpan.nearme.model.User;
 import com.facebook.login.LoginManager;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
@@ -189,10 +193,10 @@ public class MainActivity extends AppCompatActivity
 
         ar.recycle();
 
-        CustomAdapter customAdapter = new CustomAdapter(getApplicationContext(), types, icon_types);
-        spinner.setAdapter(customAdapter);
+        CustomSpinnerAdapter customSpinnerAdapter = new CustomSpinnerAdapter(getApplicationContext(), types, icon_types);
+        spinner.setAdapter(customSpinnerAdapter);
         spinner.setOnItemSelectedListener(this);
-        spinner.setSelection(customAdapter.getCount());
+        spinner.setSelection(customSpinnerAdapter.getCount());
 
     }
 
@@ -234,6 +238,16 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
+        if(id == R.id.nav_bookmark) {
+            Intent bookmark = new Intent(MainActivity.this, BookmarksActivity.class);
+            Bundle mBundle = new Bundle();
+            mBundle.putSerializable("user_object",user);
+            bookmark.putExtras(mBundle);
+            bookmark.putExtra("user_id", user_id);
+            startActivity(bookmark);
+            finish();
+        }
+
         if (id == R.id.nav_logout) {
             LoginManager.getInstance().logOut();
             Intent login = new Intent(MainActivity.this, LoginActivity.class);
@@ -241,6 +255,7 @@ public class MainActivity extends AppCompatActivity
             finish();
         }
 
+        item.setChecked(true);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -411,8 +426,10 @@ public class MainActivity extends AppCompatActivity
         location.put("latitude", selectedPlace.getLatLng().latitude);
         location.put("longitude", selectedPlace.getLatLng().longitude);
         location.put("phone_number", selectedPlace.getPhoneNumber());
+        location.put("address",selectedPlace.getVicinity());
         location.put("type",selectedType);
         location.put("user_id", user_id);
+        location.put("place_id", selectedPlace.getPlace_id());
 
         Map<String,Object> bookmark = new HashMap<String, Object>();
         bookmark.put(selectedPlace.getPlace_id(), location);

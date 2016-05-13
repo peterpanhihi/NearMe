@@ -1,6 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#FFF"
+    android:weightSum="10"
+    android:paddingTop="16dp"
+    android:paddingBottom="20dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="9"
+        android:orientation="vertical"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="18dp">
+
+        <TextView
+            android:id="@+id/bookmark_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="----- LOCATION NAME -----"
+            android:textSize="16dp"
+            android:textColor="#000"/>
+
+        <TextView
+            android:id="@+id/bookmark_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="----- LOCATION address -----"
+            android:layout_marginTop="4dp"
+            android:textSize="14dp"/>
+
+        <TextView
+            android:id="@+id/bookmark_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="----- LOCATION phone -----"
+            android:layout_marginTop="4dp"
+            android:textSize="14dp"/>
+
+    </LinearLayout>
+
+
+
+    <ImageView
+        android:id="@+id/bookmark_fav"
+        android:layout_width="0dp"
+        android:layout_height="25dp"
+        android:layout_weight="1"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/star_clicked"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="10dp"/>
 
 </LinearLayout>
