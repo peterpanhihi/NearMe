@@ -1,5 +1,8 @@
 package com.example.peterpan.nearme;
 
+import com.akexorcist.googledirection.model.Route;
+import com.google.android.gms.maps.model.LatLng;
+
 /**
  * Created by Peterpan on 5/7/2016 AD.
  */
@@ -11,6 +14,12 @@ public class Place {
     private String place_id;
     private String type;
     private String vicinity;
+    private LatLng latLng;
+    private Route route;
+    private String distance;
+    private String duration;
+    private String phoneNumber;
+    private String website;
 
     public Place(Geometry geometry, String icon, String id, String name, String place_id, String type, String vicinity) {
         this.geometry = geometry;
@@ -20,18 +29,6 @@ public class Place {
         this.place_id = place_id;
         this.type = type;
         this.vicinity = vicinity;
-    }
-
-    @Override
-    public String toString() {
-        return "Place{" +
-                "geometry=" + geometry +
-                ", icon='" + icon + '\'' +
-                ", id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", place_id='" + place_id + '\'' +
-                ", type='" + type + '\'' +
-                '}';
     }
 
     public Geometry getGeometry() {
@@ -88,6 +85,54 @@ public class Place {
 
     public void setVicinity(String vicinity) {
         this.vicinity = vicinity;
+    }
+
+    public LatLng getLatLng() {
+        return latLng;
+    }
+
+    public void setLatLng(LatLng latLng) {
+        this.latLng = latLng;
+    }
+
+    public Route getRoute() {
+        return route;
+    }
+
+    public void setRoute(Route route) {
+        this.route = route;
+    }
+
+    public String getDistance() {
+        return distance;
+    }
+
+    public void setDistance(String distance) {
+        this.distance = distance;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
     }
 
     public static class Geometry {

@@ -1,7 +1,9 @@
 package com.example.peterpan.nearme;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -26,6 +28,7 @@ import java.util.Arrays;
  * Created by Peterpan on 5/9/2016 AD.
  */
 public class LoginActivity extends AppCompatActivity {
+    private Firebase ref;
     private AccessTokenTracker accessTokenTracker;
     private ProfileTracker profileTracker;
     private CallbackManager callbackManager;
@@ -36,10 +39,11 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        user = User.getInstance();
-        user.setActivity(this);
+        user = new User();
 
         Firebase.setAndroidContext(this);
+        ref = new Firebase("https://nearmeapp.firebaseio.com/");
+
         FacebookSdk.sdkInitialize(getApplicationContext());
 
         setContentView(R.layout.activity_login);
@@ -65,7 +69,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(LoginResult loginResult) {
                 AccessToken accessToken = loginResult.getAccessToken();
-                user.saveAccessToken(accessToken.getToken());
+                saveAccessToken(accessToken.getToken());
 
                 Profile profile = Profile.getCurrentProfile();
                 nextActivity(profile);
@@ -130,14 +134,14 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void deleteAccessToken() {
-         accessTokenTracker = new AccessTokenTracker() {
+        accessTokenTracker = new AccessTokenTracker() {
             @Override
             protected void onCurrentAccessTokenChanged(
                     AccessToken oldAccessToken,
                     AccessToken currentAccessToken) {
-                if (currentAccessToken == null){
+                if (currentAccessToken == null) {
                     //User logged out
-                    user.clearToken();
+                    clearToken();
                 }
             }
         };
@@ -145,22 +149,46 @@ public class LoginActivity extends AppCompatActivity {
 
     private void nextActivity(Profile profile){
         if(profile != null){
-
             String name = profile.getName();
             String imageUrl = profile.getProfilePictureUri(300,300).toString();
 
-            user.setActivity(this);
             user.setName(name);
             user.setImageUrl(imageUrl);
 
-            Firebase ref = new Firebase("https://nearmeapp.firebaseio.com/");
-            Firebase userRef = ref.child("users").child(name);
+            Firebase userRef = ref.child("users").child(profile.getId());
 
-            userRef.child("image url").setValue(imageUrl);
-            userRef.child("token").setValue(user.getToken());
+            userRef.child("name").setValue(name);
+            userRef.child("imageUrl").setValue(imageUrl);
+            userRef.child("token").setValue(getToken());
 
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            Bundle mBundle = new Bundle();
+            mBundle.putSerializable("user_object",user);
+            intent.putExtras(mBundle);
+            intent.putExtra("user_id", profile.getId());
+
+            startActivity(intent);
+
         }
+    }
+
+    public void saveAccessToken(String token) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString("token", token);
+        editor.apply();
+    }
+
+    public String getToken() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        return sp.getString("token", null);
+    }
+
+    public void clearToken() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+        editor.apply();
     }
 
     @Override

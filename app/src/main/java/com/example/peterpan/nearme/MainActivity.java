@@ -32,9 +32,22 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.RequestResult;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.constant.Unit;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Leg;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.util.DirectionConverter;
 import com.bumptech.glide.Glide;
 import com.example.peterpan.nearme.CustomSpinner.CustomAdapter;
 import com.facebook.login.LoginManager;
+import com.firebase.client.DataSnapshot;
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
+import com.firebase.client.ValueEventListener;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -49,6 +62,8 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -58,8 +73,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -92,17 +109,33 @@ public class MainActivity extends AppCompatActivity
     private final List<Marker> mMarkers = new ArrayList<Marker>();
     private List<Place> places;
     private ListTypes listTypes = new ListTypes();
+    private List<Bookmarks> bookmarks = new ArrayList<Bookmarks>();
 
     private User user;
     private String[] types;
     private String selectedType;
     private int selectedPos = 0;
+    private Place selectedPlace;
+    private Polyline polylineRoute;
 
+    private AlertDialog.Builder builder;
+    private int switchPic;
+
+    private Firebase ref;
+    private String user_id;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        user_id = getIntent().getExtras().getString("user_id");
+        user = (User) getIntent().getSerializableExtra("user_object");
+
+        Firebase.setAndroidContext(this);
+        ref = new Firebase("https://nearmeapp.firebaseio.com/");
+
+        retrieveData(user_id);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -126,14 +159,13 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        user = User.getInstance();
         View hView =  navigationView.getHeaderView(0);
         TextView nav_name = (TextView)hView.findViewById(R.id.nav_name);
         nav_name.setText(user.getName());
 
         ImageView profileImgView = (ImageView) hView.findViewById(R.id.imageView_profile);
         Glide.with(MainActivity.this)
-                .load(user.getImageUrl())
+                .load(user.getimageUrl())
                 .into(profileImgView);
 
 
@@ -277,8 +309,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
                     Manifest.permission.ACCESS_FINE_LOCATION, true);
@@ -306,7 +336,6 @@ public class MainActivity extends AppCompatActivity
         selectedType = types[pos].toLowerCase();
         selectedPos = pos;
 
-        System.out.print("SELECTED TYPE : "+selectedType);
         if(selectedType.contains("beauty")) {
             selectedType = "beauty_salon";
         } else if(selectedType.contains("bus")) {
@@ -319,13 +348,14 @@ public class MainActivity extends AppCompatActivity
             selectedType = "gas_station";
         }else if(selectedType.equalsIgnoreCase("supermarket")) {
             selectedType = "grocery_or_supermarket";
-        }
+        } else if(selectedType.contains("police")) {
+        selectedType = "police";
+    }
 
         if(!selectedType.equalsIgnoreCase("select place")){
             try {
                 onClearMap();
                 run();
-                Toast.makeText(this, selectedType, Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -337,25 +367,124 @@ public class MainActivity extends AppCompatActivity
         // Another interface callback
     }
 
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-//        Toast.makeText(this,marker.getTitle(),Toast.LENGTH_SHORT).show();
+    public void retrieveData(final String user_id) {
+        ref.child("users").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                    User user = postSnapshot.getValue(User.class);
+                    System.out.println(user.getName() + " - " + user.getimageUrl());
+                }
+            }
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                System.out.println("The read failed: " + firebaseError.getMessage());
+            }
+        });
 
-        final AlertDialog.Builder builder =
+        ref.child("bookmarks").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                bookmarks.clear();
+
+                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                    Bookmarks b = postSnapshot.getValue(Bookmarks.class);
+                    System.out.println(b.getName() + " - " + b.getType());
+                    if(user_id.equalsIgnoreCase(b.getUser_id()))
+                        bookmarks.add(b);
+
+
+                }
+                System.out.println(Arrays.toString(bookmarks.toArray()));
+            }
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                System.out.println("The read failed: " + firebaseError.getMessage());
+            }
+        });
+
+    }
+
+    public void addBookMark() {
+        Map<String, Object> location = new HashMap<String, Object>();
+        location.put("name",selectedPlace.getName());
+        location.put("latitude", selectedPlace.getLatLng().latitude);
+        location.put("longitude", selectedPlace.getLatLng().longitude);
+        location.put("phone_number", selectedPlace.getPhoneNumber());
+        location.put("type",selectedType);
+        location.put("user_id", user_id);
+
+        Map<String,Object> bookmark = new HashMap<String, Object>();
+        bookmark.put(selectedPlace.getPlace_id(), location);
+        Firebase usersRef = ref.child("bookmarks");
+        usersRef.updateChildren(bookmark);
+    }
+
+    public void showDialog() {
+        builder =
                 new AlertDialog.Builder(MainActivity.this);
         LayoutInflater inflater = getLayoutInflater();
 
         View view = inflater.inflate(R.layout.dialog_custom, null);
         builder.setView(view);
 
-        final TextView name = (TextView) view.findViewById(R.id.locationName);
-        final TextView address = (TextView) view.findViewById(R.id.address);
-        final TextView phone = (TextView) view.findViewById(R.id.phone);
-        final TextView website = (TextView) view.findViewById(R.id.website);
+        TextView name = (TextView) view.findViewById(R.id.locationName);
+        TextView address = (TextView) view.findViewById(R.id.address);
+        TextView phone = (TextView) view.findViewById(R.id.phone);
+        TextView website = (TextView) view.findViewById(R.id.website);
+        TextView distance = (TextView) view.findViewById(R.id.distance);
+        TextView duration = (TextView) view.findViewById(R.id.duration);
+        final ImageView favourite = (ImageView) view.findViewById(R.id.favourite_mark);
+
+        name.setText(selectedPlace.getName());
+        address.setText(selectedPlace.getVicinity());
+        phone.setText(selectedPlace.getPhoneNumber());
+        website.setText(selectedPlace.getWebsite());
+        distance.setText(selectedPlace.getDistance());
+        duration.setText(selectedPlace.getDuration());
+
+        switchPic = 0;
+
+        for(int i = 0; i < bookmarks.size(); i++){
+            if(bookmarks.get(i).getName().equalsIgnoreCase(selectedPlace.getName())){
+                favourite.setImageResource(R.drawable.star_clicked);
+                switchPic = 1;
+                break;
+            }
+        }
+
+        favourite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(switchPic == 1) {
+                    favourite.setImageResource(R.drawable.star);
+                    ref.child("bookmarks").child(selectedPlace.getPlace_id()).removeValue();
+                    Toast.makeText(MainActivity.this, "Remove from Bookmarks ",Toast.LENGTH_SHORT).show();
+                    switchPic = 0;
+                } else {
+                    favourite.setImageResource(R.drawable.star_clicked);
+                    addBookMark();
+                    Toast.makeText(MainActivity.this, "Add to Bookmarks ",Toast.LENGTH_SHORT).show();
+                    switchPic = 1;
+                }
+            }
+        });
+        if(!selectedPlace.getWebsite().equalsIgnoreCase("-")) {
+            website.setTextColor(getResources().getColor(R.color.colorPrimary));
+            website.setLinksClickable(true);
+        }
 
         builder.setPositiveButton("Route", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+
+                Route route = selectedPlace.getRoute();
+                Leg leg = route.getLegList().get(0);
+
+                ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
+                PolylineOptions polylineOptions = DirectionConverter.createPolyline(MainActivity.this, directionPositionList, 5, Color.RED);
+
+                polylineRoute =  mMap.addPolyline(polylineOptions);
 
             }
         });
@@ -366,10 +495,20 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        int index = mHashMap.get(marker);
-        Place place = places.get(index);
+        builder.show();
+    }
 
-        String url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=" + place.getPlace_id() + "&key=AIzaSyCT0CYdLPDkwbNzUbLGZOALqiTRK9wOl38";
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+//        Toast.makeText(this,marker.getTitle(),Toast.LENGTH_SHORT).show();
+
+        if(polylineRoute != null)
+            polylineRoute.remove();
+
+        int index = mHashMap.get(marker);
+        selectedPlace = places.get(index);
+
+        String url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=" + selectedPlace.getPlace_id() + "&key=AIzaSyCT0CYdLPDkwbNzUbLGZOALqiTRK9wOl38";
 
         final Request request = new Request.Builder()
                 .url(url)
@@ -389,28 +528,27 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 String jsonData = response.body().string();
-                System.out.println(jsonData);
                 JSONObject Jobject = null;
                 JSONObject results;
                 try {
                     Jobject = new JSONObject(jsonData);
                     results = Jobject.getJSONObject("result");
-                    name.setText(results.getString("name"));
-                    address.setText(results.getString("formatted_address"));
-                    if(jsonData.contains("formatted_phone_number"))
-                        phone.setText(results.getString("formatted_phone_number"));
-                    if(jsonData.contains("website")) {
-                        website.setText(results.getString("website"));
-                        website.setTextColor(getResources().getColor(R.color.colorPrimary));
-                        website.setLinksClickable(true);
-                    }
 
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            builder.show();
-                        }
-                    });
+                    selectedPlace.setVicinity(results.getString("formatted_address"));
+
+                    if(jsonData.contains("formatted_phone_number"))
+                        selectedPlace.setPhoneNumber(results.getString("formatted_phone_number"));
+                    else
+                        selectedPlace.setPhoneNumber("-");
+
+                    if(jsonData.contains("website")) {
+                        selectedPlace.setWebsite(results.getString("website"));
+                    }
+                    else
+                        selectedPlace.setWebsite("-");
+
+                    getDirection();
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -419,6 +557,43 @@ public class MainActivity extends AppCompatActivity
         });
 
         return false;
+    }
+
+    public void getDirection() {
+        System.out.println("LATLNG"+selectedPlace.getLatLng());
+        GoogleDirection.withServerKey("AIzaSyCT0CYdLPDkwbNzUbLGZOALqiTRK9wOl38")
+                .from(getLocation())
+                .to(selectedPlace.getLatLng())
+                .unit(Unit.METRIC)
+                .transportMode(TransportMode.WALKING)
+                .execute(new DirectionCallback() {
+                    @Override
+                    public void onDirectionSuccess(Direction direction, String rawBody) {
+                        String status = direction.getStatus();
+                        if(status.equals(RequestResult.OK)) {
+                            Route route = direction.getRouteList().get(0);
+                            Leg leg = route.getLegList().get(0);
+                            String distance = leg.getDistance().getText();
+                            String duration = leg.getDuration().getText();
+
+                            selectedPlace.setRoute(route);
+                            selectedPlace.setDistance(distance);
+                            selectedPlace.setDuration(duration);
+
+                            showDialog();
+
+                        } else if(status.equals(RequestResult.NOT_FOUND)) {
+                            Toast.makeText(MainActivity.this, "NOT FOUND", Toast.LENGTH_SHORT);
+                        } else if(status.equals(RequestResult.ZERO_RESULTS)) {
+                            Toast.makeText(MainActivity.this, "NO RESULT", Toast.LENGTH_SHORT);
+                        }
+                    }
+
+                    @Override
+                    public void onDirectionFailure(Throwable t) {
+
+                    }
+                });
     }
 
     public void run() throws Exception {
@@ -442,10 +617,22 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 String jsonData = response.body().string();
+                System.out.println(jsonData);
                 JSONObject Jobject = null;
-                String results ="";
+                String results ="",status = "";
                 try {
                     Jobject = new JSONObject(jsonData);
+                    status = Jobject.get("status").toString();
+                    if(status.equalsIgnoreCase("ZERO_RESULTS")) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "There is NO place near you.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        return;
+                    }
+
                     results = Jobject.getJSONArray("results").toString();
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -489,14 +676,17 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 for (int i = 0; i < places.size(); i++) {
+                    places.get(i).setLatLng(new LatLng(
+                            places.get(i).getGeometry().getLocation().getLat(),
+                            places.get(i).getGeometry().getLocation().getLng()));
+
                     Marker marker = mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(
-                                    places.get(i).getGeometry().getLocation().getLat(),
-                                    places.get(i).getGeometry().getLocation().getLng()))
+                            .position(places.get(i).getLatLng())
                             .title(places.get(i).getName())
                             .icon(getMarkerIcon(getResources().getStringArray(R.array.color_type_array)[selectedPos])));
                     mMarkers.add(marker);
                     mHashMap.put(marker, i);
+
                 }
             }
         });
@@ -523,5 +713,9 @@ public class MainActivity extends AppCompatActivity
             return false;
         }
         return true;
+    }
+
+    public LatLng getLocation(){
+        return new LatLng(location.getLatitude(),location.getLongitude());
     }
 }
