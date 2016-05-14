@@ -21,6 +21,8 @@ public class Place {
     private String phoneNumber;
     private String website;
 
+    public Place() {}
+
     public Place(Geometry geometry, String icon, String id, String name, String place_id, String type, String vicinity) {
         this.geometry = geometry;
         this.icon = icon;

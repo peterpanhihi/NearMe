@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -97,9 +98,6 @@ public class MainActivity extends AppCompatActivity
         AdapterView.OnItemSelectedListener,
         GoogleMap.OnMarkerClickListener {
 
-    /**
-     * Request code for location permission request.
-     */
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
     private GoogleApiClient client;
@@ -114,7 +112,7 @@ public class MainActivity extends AppCompatActivity
     private List<Place> places;
     private ListTypes listTypes = new ListTypes();
     private List<Bookmarks> bookmarks = new ArrayList<Bookmarks>();
-
+    private String[] markPlace;
     private User user;
     private String[] types;
     private String selectedType;
@@ -128,18 +126,13 @@ public class MainActivity extends AppCompatActivity
     private Firebase ref;
     private String user_id;
 
+    private FloatingActionButton call_btn;
+    private FloatingActionButton navigation_btn;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        user_id = getIntent().getExtras().getString("user_id");
-        user = (User) getIntent().getSerializableExtra("user_object");
-
-        Firebase.setAndroidContext(this);
-        ref = new Firebase("https://nearmeapp.firebaseio.com/");
-
-        retrieveData(user_id);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -154,17 +147,40 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        call_btn = (FloatingActionButton) findViewById(R.id.call_btn);
+        navigation_btn = (FloatingActionButton) findViewById(R.id.navigate_btn);
+        call_btn.setVisibility(View.GONE);
+        navigation_btn.setVisibility(View.GONE);
+
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
+        Firebase.setAndroidContext(this);
+        ref = new Firebase("https://nearmeapp.firebaseio.com/");
+
+        Intent intent = getIntent();
+        if(intent != null) {
+            user_id = intent.getExtras().getString("user_id");
+            user = (User) intent.getSerializableExtra("user_object");
+
+            retrieveData(user_id);
+
+            int call = intent.getExtras().getInt("call");
+            int navigation = intent.getExtras().getInt("navigation");
+            if(call == 1) call();
+            if(navigation == 1) navigate();
+
+            markPlace = intent.getExtras().getStringArray("bookmarkPlace");
+        }
+
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        View hView =  navigationView.getHeaderView(0);
-        TextView nav_name = (TextView)hView.findViewById(R.id.nav_name);
+        View hView = navigationView.getHeaderView(0);
+        TextView nav_name = (TextView) hView.findViewById(R.id.nav_name);
         nav_name.setText(user.getName());
 
         ImageView profileImgView = (ImageView) hView.findViewById(R.id.imageView_profile);
@@ -238,10 +254,10 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if(id == R.id.nav_bookmark) {
+        if (id == R.id.nav_bookmark) {
             Intent bookmark = new Intent(MainActivity.this, BookmarksActivity.class);
             Bundle mBundle = new Bundle();
-            mBundle.putSerializable("user_object",user);
+            mBundle.putSerializable("user_object", user);
             bookmark.putExtras(mBundle);
             bookmark.putExtra("user_id", user_id);
             startActivity(bookmark);
@@ -329,7 +345,11 @@ public class MainActivity extends AppCompatActivity
                     Manifest.permission.ACCESS_FINE_LOCATION, true);
         } else {
             location = LocationServices.FusedLocationApi.getLastLocation(client);
-            showCurrentLocation();
+            if(markPlace != null) {
+                addMarker();
+            } else {
+                showCurrentLocation();
+            }
 
             LocationRequest req = new LocationRequest();
             req.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -351,25 +371,28 @@ public class MainActivity extends AppCompatActivity
         selectedType = types[pos].toLowerCase();
         selectedPos = pos;
 
-        if(selectedType.contains("beauty")) {
+        if (selectedType.contains("beauty")) {
             selectedType = "beauty_salon";
-        } else if(selectedType.contains("bus")) {
+        } else if (selectedType.contains("bus")) {
             selectedType = "bus_station";
-        } else if(selectedType.contains("convenience")) {
+        } else if (selectedType.contains("convenience")) {
             selectedType = "convenience_store";
-        } else if(selectedType.contains("department")) {
+        } else if (selectedType.contains("department")) {
             selectedType = "department_store";
-        } else if(selectedType.contains("gas")) {
+        } else if (selectedType.contains("gas")) {
             selectedType = "gas_station";
-        }else if(selectedType.equalsIgnoreCase("supermarket")) {
+        } else if (selectedType.equalsIgnoreCase("supermarket")) {
             selectedType = "grocery_or_supermarket";
-        } else if(selectedType.contains("police")) {
-        selectedType = "police";
-    }
+        } else if (selectedType.contains("police")) {
+            selectedType = "police";
+        }
 
-        if(!selectedType.equalsIgnoreCase("select place")){
+        if (!selectedType.equalsIgnoreCase("select place")) {
             try {
                 onClearMap();
+                markPlace = null;
+                call_btn.setVisibility(View.GONE);
+                navigation_btn.setVisibility(View.GONE);
                 run();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -386,11 +409,12 @@ public class MainActivity extends AppCompatActivity
         ref.child("users").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                for (DataSnapshot postSnapshot : snapshot.getChildren()) {
                     User user = postSnapshot.getValue(User.class);
                     System.out.println(user.getName() + " - " + user.getimageUrl());
                 }
             }
+
             @Override
             public void onCancelled(FirebaseError firebaseError) {
                 System.out.println("The read failed: " + firebaseError.getMessage());
@@ -402,16 +426,17 @@ public class MainActivity extends AppCompatActivity
             public void onDataChange(DataSnapshot snapshot) {
                 bookmarks.clear();
 
-                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                for (DataSnapshot postSnapshot : snapshot.getChildren()) {
                     Bookmarks b = postSnapshot.getValue(Bookmarks.class);
                     System.out.println(b.getName() + " - " + b.getType());
-                    if(user_id.equalsIgnoreCase(b.getUser_id()))
+                    if (user_id.equalsIgnoreCase(b.getUser_id()))
                         bookmarks.add(b);
 
 
                 }
                 System.out.println(Arrays.toString(bookmarks.toArray()));
             }
+
             @Override
             public void onCancelled(FirebaseError firebaseError) {
                 System.out.println("The read failed: " + firebaseError.getMessage());
@@ -422,16 +447,16 @@ public class MainActivity extends AppCompatActivity
 
     public void addBookMark() {
         Map<String, Object> location = new HashMap<String, Object>();
-        location.put("name",selectedPlace.getName());
+        location.put("name", selectedPlace.getName());
         location.put("latitude", selectedPlace.getLatLng().latitude);
         location.put("longitude", selectedPlace.getLatLng().longitude);
         location.put("phone_number", selectedPlace.getPhoneNumber());
-        location.put("address",selectedPlace.getVicinity());
-        location.put("type",selectedType);
+        location.put("address", selectedPlace.getVicinity());
+        location.put("type", selectedType);
         location.put("user_id", user_id);
         location.put("place_id", selectedPlace.getPlace_id());
 
-        Map<String,Object> bookmark = new HashMap<String, Object>();
+        Map<String, Object> bookmark = new HashMap<String, Object>();
         bookmark.put(selectedPlace.getPlace_id(), location);
         Firebase usersRef = ref.child("bookmarks");
         usersRef.updateChildren(bookmark);
@@ -462,8 +487,8 @@ public class MainActivity extends AppCompatActivity
 
         switchPic = 0;
 
-        for(int i = 0; i < bookmarks.size(); i++){
-            if(bookmarks.get(i).getName().equalsIgnoreCase(selectedPlace.getName())){
+        for (int i = 0; i < bookmarks.size(); i++) {
+            if (bookmarks.get(i).getName().equalsIgnoreCase(selectedPlace.getName())) {
                 favourite.setImageResource(R.drawable.star_clicked);
                 switchPic = 1;
                 break;
@@ -473,20 +498,20 @@ public class MainActivity extends AppCompatActivity
         favourite.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(switchPic == 1) {
+                if (switchPic == 1) {
                     favourite.setImageResource(R.drawable.star);
                     ref.child("bookmarks").child(selectedPlace.getPlace_id()).removeValue();
-                    Toast.makeText(MainActivity.this, "Remove from Bookmarks ",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Remove from Bookmarks ", Toast.LENGTH_SHORT).show();
                     switchPic = 0;
                 } else {
                     favourite.setImageResource(R.drawable.star_clicked);
                     addBookMark();
-                    Toast.makeText(MainActivity.this, "Add to Bookmarks ",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Add to Bookmarks ", Toast.LENGTH_SHORT).show();
                     switchPic = 1;
                 }
             }
         });
-        if(!selectedPlace.getWebsite().equalsIgnoreCase("-")) {
+        if (!selectedPlace.getWebsite().equalsIgnoreCase("-")) {
             website.setTextColor(getResources().getColor(R.color.colorPrimary));
             website.setLinksClickable(true);
         }
@@ -501,7 +526,13 @@ public class MainActivity extends AppCompatActivity
                 ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
                 PolylineOptions polylineOptions = DirectionConverter.createPolyline(MainActivity.this, directionPositionList, 5, Color.RED);
 
-                polylineRoute =  mMap.addPolyline(polylineOptions);
+                polylineRoute = mMap.addPolyline(polylineOptions);
+
+                if(!selectedPlace.getPhoneNumber().equalsIgnoreCase("-")) {
+                    call();
+                }
+
+                navigate();
 
             }
         });
@@ -515,9 +546,43 @@ public class MainActivity extends AppCompatActivity
         builder.show();
     }
 
+    public void call() {
+        call_btn.setVisibility(View.VISIBLE);
+        call_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String uri = "tel:"+selectedPlace.getPhoneNumber();
+                Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse(uri));
+                try{
+                    startActivity(dialIntent);
+                }
+
+                catch (android.content.ActivityNotFoundException ex){
+                    Toast.makeText(getApplicationContext(),"yourActivity is not founded",Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    public void navigate() {
+        navigation_btn.setVisibility(View.VISIBLE);
+        navigation_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Uri gmmIntentUri = Uri.parse("google.navigation:q=" + selectedPlace.getLatLng().latitude + "," + selectedPlace.getLatLng().longitude + "&mode=w");
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                startActivity(mapIntent);
+            }
+        });
+    }
+
     @Override
     public boolean onMarkerClick(Marker marker) {
 //        Toast.makeText(this,marker.getTitle(),Toast.LENGTH_SHORT).show();
+        if(markPlace != null) {
+            return false;
+        }
 
         if(polylineRoute != null)
             polylineRoute.remove();
@@ -682,6 +747,34 @@ public class MainActivity extends AppCompatActivity
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
         }
+    }
+
+    public void addMarker() {
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                if (!checkReady()) {
+                    return;
+                }
+
+                selectedPlace = new Place();
+                selectedPlace.setLatLng(new LatLng(Double.parseDouble(markPlace[0]), Double.parseDouble(markPlace[1])));
+                selectedPlace.setName(markPlace[2]);
+                selectedPlace.setPhoneNumber(markPlace[3]);
+
+                mMap.addMarker(new MarkerOptions()
+                        .position(selectedPlace.getLatLng())
+                        .title(selectedPlace.getName())).showInfoWindow();;
+
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(selectedPlace.getLatLng())
+                        .zoom(17)
+                        .build();
+                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+            }
+        });
     }
 
     public void addMarkers() {

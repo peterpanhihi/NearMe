@@ -11,9 +11,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.peterpan.nearme.custom_listview.CustomListviewAdapter;
@@ -32,10 +36,15 @@ import java.util.List;
 /**
  * Created by Peterpan on 5/13/2016 AD.
  */
-public class BookmarksActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class BookmarksActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, AdapterView.OnItemSelectedListener {
     private List<Bookmarks> bookmarks;
+    private List<Bookmarks> all;
     private User user;
     private String user_id;
+
+    private CustomListviewAdapter adapter;
+    private Spinner spinner;
+    private ListView  listView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -67,8 +76,17 @@ public class BookmarksActivity extends AppCompatActivity implements NavigationVi
                 .into(profileImgView);
 
         bookmarks = new ArrayList<Bookmarks>();
+        all = new ArrayList<Bookmarks>();
 
-        final ListView  listView = (ListView) findViewById(R.id.listview_bookmark);
+        spinner = (Spinner) findViewById(R.id.bookmark_types_spinner);
+        ArrayAdapter<CharSequence> adapterSpinner = ArrayAdapter.createFromResource(this,
+                R.array.bookmark_types_array, android.R.layout.simple_spinner_item);
+        adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapterSpinner);
+        spinner.setOnItemSelectedListener(this);
+
+
+        listView = (ListView) findViewById(R.id.listview_bookmark);
 
         Firebase.setAndroidContext(this);
         Firebase ref = new Firebase("https://nearmeapp.firebaseio.com/");
@@ -86,10 +104,34 @@ public class BookmarksActivity extends AppCompatActivity implements NavigationVi
                     }
                 }
 
+                all.addAll(bookmarks);
+
                 System.out.println(Arrays.toString(bookmarks.toArray()));
 
-                CustomListviewAdapter adapter = new CustomListviewAdapter(BookmarksActivity.this, bookmarks);
+                adapter = new CustomListviewAdapter(BookmarksActivity.this, bookmarks);
                 listView.setAdapter(adapter);
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                        int isPhone = 0;
+
+                        if(!bookmarks.get(position).getPhone_number().equalsIgnoreCase("-"))
+                            isPhone = 1;
+
+                        Intent home = new Intent(BookmarksActivity.this, MainActivity.class);
+                        Bundle mBundle = new Bundle();
+                        mBundle.putSerializable("user_object",user);
+                        home.putExtras(mBundle);
+                        home.putExtra("user_id", user_id);
+                        home.putExtra("navigation",1);
+                        home.putExtra("call",isPhone);
+                        String[] place = {bookmarks.get(position).getLatitude()+"", bookmarks.get(position).getLongitude()+"", bookmarks.get(position).getName(), bookmarks.get(position).getPhone_number()};
+                        home.putExtra("bookmarkPlace", place);
+                        startActivity(home);
+                        finish();
+                    }
+                });
             }
 
             @Override
@@ -110,6 +152,8 @@ public class BookmarksActivity extends AppCompatActivity implements NavigationVi
             mBundle.putSerializable("user_object",user);
             home.putExtras(mBundle);
             home.putExtra("user_id", user_id);
+            home.putExtra("navigation",0);
+            home.putExtra("call",0);
             startActivity(home);
             finish();
         }
@@ -124,5 +168,50 @@ public class BookmarksActivity extends AppCompatActivity implements NavigationVi
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+        String selectedType = spinner.getSelectedItem().toString();
+
+        if (selectedType.contains("beauty")) {
+            selectedType = "beauty_salon";
+        } else if (selectedType.contains("bus")) {
+            selectedType = "bus_station";
+        } else if (selectedType.contains("convenience")) {
+            selectedType = "convenience_store";
+        } else if (selectedType.contains("department")) {
+            selectedType = "department_store";
+        } else if (selectedType.contains("gas")) {
+            selectedType = "gas_station";
+        } else if (selectedType.equalsIgnoreCase("supermarket")) {
+            selectedType = "grocery_or_supermarket";
+        } else if (selectedType.contains("police")) {
+            selectedType = "police";
+        }
+
+        bookmarks.clear();
+        if(selectedType.contains("All")) {
+            System.out.println("SIZE : "+all.size());
+
+            bookmarks.addAll(all);
+        } else {
+            for(int index = 0; index < all.size(); index++) {
+                if(all.get(index).getType().equalsIgnoreCase(selectedType)) {
+                    bookmarks.add(all.get(index));
+                }
+            }
+        }
+        adapter.notifyDataSetChanged();
+
+        if(bookmarks.size() == 0)
+            Toast.makeText(BookmarksActivity.this, "There is no bookmark.", Toast.LENGTH_SHORT).show();
+
+
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
+
     }
 }

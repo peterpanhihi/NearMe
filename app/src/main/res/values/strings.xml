@@ -25,6 +25,24 @@
         <item>Select Place</item>
     </string-array>
 
+    <string-array name="bookmark_types_array">
+        <item>All types</item>
+        <item>ATM</item>
+        <item>Bakery</item>
+        <item>Bank</item>
+        <item>Beauty and salon</item>
+        <item>Bus station</item>
+        <item>Cafe</item>
+        <item>Convenience store</item>
+        <item>Department store</item>
+        <item>Hospital</item>
+        <item>Gas station</item>
+        <item>Supermarket</item>
+        <item>Pharmacy</item>
+        <item>Police station</item>
+        <item>Restaurant</item>
+    </string-array>
+
     <integer-array name="icon_types_array">
         <item>@drawable/atm</item>
         <item>@drawable/cupcake</item>
